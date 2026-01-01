@@ -210,16 +210,23 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16),
                     leading: Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                       decoration: BoxDecoration(
                         color: Colors.purple.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min, // FIXED: Added this to shrink-wrap content
                         children: [
-                          Text(DateFormat('MMM').format(date).toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple)),
-                          Text(date.day.toString(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple)),
+                          Text(
+                            DateFormat('MMM').format(date).toUpperCase(),
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple),
+                          ),
+                          Text(
+                            date.day.toString(),
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple),
+                          ),
                         ],
                       ),
                     ),
