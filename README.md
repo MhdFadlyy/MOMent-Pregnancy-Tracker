@@ -50,8 +50,6 @@
 |:----------------------------------------------------:|:-----------------------------------------------------------:|:--------------------------------------------------:|
 | <img src="assets/screenshots/kicks.png" width="200"> | <img src="assets/screenshots/appointments.png" width="200"> | <img src="assets/screenshots/pdf.png" width="200"> |
 
-*(Note: Upload your actual screenshots to an `assets/screenshots` folder in your repo to make these visible!)*
-
 ---
 
 ## 🏁 Getting Started
