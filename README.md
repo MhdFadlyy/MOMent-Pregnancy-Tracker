@@ -42,12 +42,12 @@
 
 ## 📸 Screenshots
 
-| Dashboard | Health Logger | Chat Bot |
-|:---------:|:-------------:|:--------:|
+|                        Dashboard                         |                     Health Logger                     |                      Chat Bot                       |
+|:--------------------------------------------------------:|:-----------------------------------------------------:|:---------------------------------------------------:|
 | <img src="assets/screenshots/dashboard.png" width="200"> | <img src="assets/screenshots/health.png" width="200"> | <img src="assets/screenshots/chat.png" width="200"> |
 
-| Kick Counter | Appointments | PDF Report |
-|:------------:|:------------:|:----------:|
+|                     Kick Counter                     |                        Appointments                         |                     PDF Report                     |
+|:----------------------------------------------------:|:-----------------------------------------------------------:|:--------------------------------------------------:|
 | <img src="assets/screenshots/kicks.png" width="200"> | <img src="assets/screenshots/appointments.png" width="200"> | <img src="assets/screenshots/pdf.png" width="200"> |
 
 *(Note: Upload your actual screenshots to an `assets/screenshots` folder in your repo to make these visible!)*
