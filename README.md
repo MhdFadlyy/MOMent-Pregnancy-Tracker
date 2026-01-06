@@ -66,7 +66,7 @@ To run this project locally:
     ```
 3.  **Firebase Setup:**
     * This project relies on `google-services.json` (Android) and `GoogleService-Info.plist` (iOS).
-    * *Note: For this student project, keys are included. For production, you must generate your own in the Firebase Console.*
+
 4.  **Run the App:**
     ```bash
     flutter run
