@@ -76,9 +76,9 @@ To run this project locally:
 
 ## 📄 License
 
-Name        : FADLY MUHAMMAD
-Matric No   : 2117999
-Course      : BIT
-This project was developed as a **Final Year Project (FYP)** for the Bachelor of Information Technology program.
+* Name        : FADLY MUHAMMAD
+* Matric No   : 2117999
+* Course      : BIT
+* This project was developed as a **Final Year Project (FYP)** for the Bachelor of Information Technology program.
 
 ---
