@@ -58,7 +58,7 @@ To run this project locally:
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/YOUR_USERNAME/MOMent-Pregnancy-Tracker.git](https://github.com/YOUR_USERNAME/MOMent-Pregnancy-Tracker.git)
+    git clone [https://github.com/MhdFadlyy/MOMent-Pregnancy-Tracker](https://github.com/MhdFadlyy/MOMent-Pregnancy-Tracker)
     ```
 2.  **Install Dependencies:**
     ```bash
