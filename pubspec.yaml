@@ -27,9 +27,11 @@ environment:
 # dependencies can be manually updated by changing the version numbers below to
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
-dependencies:
-  flutter:
+dev_dependencies:
+  flutter_test:
     sdk: flutter
+
+  flutter_launcher_icons: ^0.13.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -41,16 +43,6 @@ dependencies:
   cloud_firestore: ^6.1.1
   pdf: ^3.11.3
   printing: ^5.14.2
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
@@ -63,6 +55,8 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/images/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -94,3 +88,19 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: "launcher_icon" # The file name generated in Android res folders
+  ios: true # Generate icons for iOS
+  remove_alpha_ios: true # Removes transparency for iOS (required by Apple)
+
+  # --- Image Source Settings ---
+  # This image is used for iOS and older Android devices.
+  # It should be a full square image (logo + background combined) if possible.
+  image_path: "assets/images/foreground.png"
+
+  # --- Adaptive Icon Settings (For Round Android Icons) ---
+  # The foreground (your transparent logo)
+  adaptive_icon_foreground: "assets/images/foreground.png"
+  # The background color behind the logo (e.g., white represented as hex #FFFFFF)
+  adaptive_icon_background: "#FFFFFF"

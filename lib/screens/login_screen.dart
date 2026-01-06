@@ -85,7 +85,6 @@ class _LoginScreenState extends State<LoginScreen> {
               if (email.isEmpty) return;
 
               try {
-                // This is the Magic Firebase line
                 await FirebaseAuth.instance
                     .sendPasswordResetEmail(email: email);
 
@@ -124,14 +123,42 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 100),
-              // App Logo / Title Area
-              Icon(
-                Icons.pregnant_woman,
-                size: 80,
-                color: Theme.of(context).colorScheme.primary,
+              const SizedBox(height: 40), // Spacing from top
+
+              // --- LOGO REPLACEMENT ---
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        spreadRadius: 2,
+                        blurRadius: 5,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/foreground.png',
+                      height: 120,
+                      width: 120,
+                      fit: BoxFit.cover,
+                      // Fallback if image fails to load
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(Icons.pregnant_woman, size: 80, color: Theme.of(context).colorScheme.primary);
+                      },
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(height: 16),
+
+              const SizedBox(height: 20),
+
+              // Title Area
               Text(
                 'MOMent',
                 textAlign: TextAlign.center,
