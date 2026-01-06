@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   bool _isLoading = false;
 
+  // --- AUTH FUNCTION ---
   Future<void> _submitAuth() async {
     setState(() => _isLoading = true);
 
@@ -48,6 +49,68 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  // --- FORGOT PASSWORD LOGIC ---
+  Future<void> _showForgotPasswordDialog() async {
+    final TextEditingController resetEmailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Reset Password"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+                "Enter your email address and we will send you a link to reset your password."),
+            const SizedBox(height: 10),
+            TextField(
+              controller: resetEmailController,
+              decoration: const InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = resetEmailController.text.trim();
+              if (email.isEmpty) return;
+
+              try {
+                // This is the Magic Firebase line
+                await FirebaseAuth.instance
+                    .sendPasswordResetEmail(email: email);
+
+                if (mounted) {
+                  Navigator.pop(context); // Close dialog
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text(
+                            "Password reset email sent! Check your inbox.")),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Error: $e")),
+                  );
+                }
+              }
+            },
+            child: const Text("Send Email"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -114,8 +177,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
 
+              // --- FORGOT PASSWORD BUTTON ---
+              // Only show this button in "Sign In" mode
+              if (_isLogin)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _showForgotPasswordDialog,
+                    child: const Text("Forgot Password?"),
+                  ),
+                )
+              else
+                const SizedBox(height: 24),
+
+              // Main Action Button
               ElevatedButton(
                 onPressed: _isLoading ? null : _submitAuth,
                 style: ElevatedButton.styleFrom(
@@ -126,12 +202,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                // CHANGE 2: Show a loading spinner or the correct text (Sign In vs Sign Up)
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : Text(
                   _isLogin ? 'Sign In' : 'Create Account',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
 
@@ -141,16 +217,15 @@ class _LoginScreenState extends State<LoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // CHANGE 3: Update text based on mode
-                  Text(_isLogin ? "New to MOMent?" : "Already have an account?"),
+                  Text(_isLogin
+                      ? "New to MOMent?"
+                      : "Already have an account?"),
                   TextButton(
                     onPressed: () {
-                      // CHANGE 4: Add logic to switch between Login and Sign Up
                       setState(() {
                         _isLogin = !_isLogin;
                       });
                     },
-                    // CHANGE 5: Update button text based on mode
                     child: Text(_isLogin ? 'Create Account' : 'Log In'),
                   ),
                 ],
