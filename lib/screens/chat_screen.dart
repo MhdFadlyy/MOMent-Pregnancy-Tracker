@@ -85,12 +85,12 @@ class _ChatScreenState extends State<ChatScreen> {
       ]);
     }
 
-    // --- SYMPTOMS: PAIN / CRAMPS (General) ---
+    // --- SYMPTOMS: PAIN / CRAMPS (buat jd general) ---
     if (input.contains("pain") || input.contains("cramp") || input.contains("hurt")) {
       return "If the pain is severe or accompanied by bleeding, please go to the hospital immediately. For mild cramps, rest and hydration often help.";
     }
 
-    // --- CRITICAL / EMERGENCY ---
+    // --- CRITICAL / EMERGENCY (Wajib ER ini mah) ---
     if (input.contains("bleed") || input.contains("blood") || input.contains("water broke") || input.contains("fever")) {
       return "⚠️ This could be urgent. Please contact your doctor or visit the Emergency Room (ER) immediately.";
     }
