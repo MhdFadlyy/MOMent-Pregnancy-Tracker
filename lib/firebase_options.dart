@@ -1,7 +1,8 @@
-// Auto-generated-style Firebase config for the Web target (mirrors what
-// `flutterfire configure` produces). Android keeps using
-// android/app/google-services.json natively via the Gradle plugin; this file
-// only covers `flutter run -d chrome` / `flutter build web`.
+// Auto-generated-style Firebase config (mirrors what `flutterfire configure`
+// produces): one FirebaseOptions per platform, picked by currentPlatform.
+// Android also keeps reading android/app/google-services.json natively via
+// the Gradle plugin — the `android` options here just keep Dart-side
+// initialization consistent so it never throws.
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
@@ -10,13 +11,10 @@ class DefaultFirebaseOptions {
     if (kIsWeb) return web;
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        throw UnsupportedError(
-          'Android uses android/app/google-services.json natively; '
-          'this options object only covers Web.',
-        );
+        return android;
       default:
         throw UnsupportedError(
-          'DefaultFirebaseOptions is only configured for Web in this project.',
+          'DefaultFirebaseOptions is only configured for Android and Web in this project.',
         );
     }
   }
@@ -29,5 +27,16 @@ class DefaultFirebaseOptions {
     authDomain: 'moment-5aa79.firebaseapp.com',
     storageBucket: 'moment-5aa79.firebasestorage.app',
     measurementId: 'G-KP0VSJKDD5',
+  );
+
+  // Mirrors android/app/google-services.json — kept in sync so
+  // Firebase.initializeApp(options: ...) never throws on Android, even
+  // though the native google-services Gradle plugin also reads that file.
+  static const android = FirebaseOptions(
+    apiKey: 'AIzaSyAPQ9zCcs7monehrlYMLGp8wxb-61eSFww',
+    appId: '1:54916060060:android:cf8b6ed3fb62263acdae59',
+    messagingSenderId: '54916060060',
+    projectId: 'moment-5aa79',
+    storageBucket: 'moment-5aa79.firebasestorage.app',
   );
 }
