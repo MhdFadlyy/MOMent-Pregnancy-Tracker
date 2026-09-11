@@ -2,6 +2,8 @@
 
 **MOMent** is a comprehensive mobile application designed to assist expectant mothers in monitoring their pregnancy journey. Built with **Flutter** and **Firebase**, it serves as a centralized hub for tracking health metrics, milestones, and appointments, ensuring a safer and more organized pregnancy experience.
 
+🔗 **[Live demo](https://moment-5aa79.web.app)** (Web build, runs against the real Firebase backend — sign up with any email to try it)
+
 ## 🚀 Features
 
 ### 1. 🏠 Smart Dashboard
@@ -76,6 +78,11 @@ To run this project locally:
     ```bash
     flutter run           # Android/iOS device or emulator
     flutter run -d chrome # Web
+    ```
+5.  **(Optional) Redeploy the web build:**
+    ```bash
+    flutter build web
+    firebase deploy --only hosting
     ```
 
 ---
