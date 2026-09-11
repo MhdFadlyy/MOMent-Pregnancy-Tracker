@@ -8,6 +8,9 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../services/auth_service.dart';
+import '../services/health_service.dart';
+
 class HealthLoggingScreen extends StatefulWidget {
   const HealthLoggingScreen({super.key});
 
@@ -15,9 +18,55 @@ class HealthLoggingScreen extends StatefulWidget {
   State<HealthLoggingScreen> createState() => _HealthLoggingScreenState();
 }
 
+/// How one log entry should be shown, shared between the history list
+/// and the PDF report so both stay in sync instead of duplicating the
+/// per-type formatting logic.
+class _HealthLogDisplay {
+  const _HealthLogDisplay({
+    required this.icon,
+    required this.color,
+    required this.detailsText,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String detailsText; // e.g. "70.5 kg" — also used as the PDF "Details" cell
+  final String subtitle; // e.g. "Weight Logged" — list only
+
+  static _HealthLogDisplay of(Map<String, dynamic> data) {
+    switch (data['type']) {
+      case 'weight':
+        return _HealthLogDisplay(
+          icon: Icons.monitor_weight,
+          color: Colors.blue,
+          detailsText: "${data['value']} kg",
+          subtitle: "Weight Logged",
+        );
+      case 'diet':
+        return _HealthLogDisplay(
+          icon: Icons.restaurant,
+          color: Colors.green,
+          detailsText: "${data['meal_type']}: ${data['description']}",
+          subtitle: "Diet Logged",
+        );
+      default:
+        return _HealthLogDisplay(
+          icon: Icons.fitness_center,
+          color: Colors.orange,
+          detailsText: "${data['description']} (${data['duration_mins']} mins)",
+          subtitle: "Exercise Logged",
+        );
+    }
+  }
+}
+
 class _HealthLoggingScreenState extends State<HealthLoggingScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final User? user = FirebaseAuth.instance.currentUser;
+  final User? user = const AuthService().currentUser;
+  HealthService get _healthService => HealthService(user!.uid);
+
+  static String _formatLogDate(DateTime date) => DateFormat('dd/MM/yyyy HH:mm').format(date);
 
   // -- CONTROLLERS --
   final TextEditingController _weightController = TextEditingController();
@@ -44,14 +93,7 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> with SingleTi
 
     try {
       // A. Fetch Data from Firestore
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .collection('health_logs')
-          .orderBy('timestamp', descending: true)
-          .get();
-
-      final docs = querySnapshot.docs;
+      final docs = await _healthService.fetchLogsForReport();
 
       // B. Create PDF Document
       final pdf = pw.Document();
@@ -77,7 +119,7 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> with SingleTi
               pw.SizedBox(height: 20),
 
               // Table
-              pw.Table.fromTextArray(
+              pw.TableHelper.fromTextArray(
                 border: null,
                 headerStyle: pw.TextStyle(font: fontBold, color: PdfColors.white),
                 headerDecoration: const pw.BoxDecoration(color: PdfColors.purple),
@@ -91,19 +133,10 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> with SingleTi
                 data: docs.map((doc) {
                   final data = doc.data();
                   final date = (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
-                  final dateStr = DateFormat('MM-dd HH:mm').format(date);
                   final type = (data['type'] ?? 'General').toString().toUpperCase();
+                  final details = _HealthLogDisplay.of(data).detailsText;
 
-                  String details = "";
-                  if (data['type'] == 'weight') {
-                    details = "${data['value']} kg";
-                  } else if (data['type'] == 'diet') {
-                    details = "${data['meal_type']}: ${data['description']}";
-                  } else {
-                    details = "${data['description']} (${data['duration_mins']} mins)";
-                  }
-
-                  return [dateStr, type, details];
+                  return [_formatLogDate(date), type, details];
                 }).toList(),
               ),
             ];
@@ -121,7 +154,8 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> with SingleTi
       );
 
     } catch (e) {
-      if (mounted) Navigator.pop(context); // If error = close loading
+      if (!mounted) return;
+      Navigator.pop(context); // If error = close loading
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error generating PDF: $e")));
     }
   }
@@ -131,12 +165,18 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> with SingleTi
     if (user == null) return;
 
     String type = "";
-    Map<String, dynamic> data = {'timestamp': FieldValue.serverTimestamp()};
+    final Map<String, dynamic> data = {};
 
     if (_tabController.index == 0) {
-      if (_weightController.text.isEmpty) return;
+      final weight = double.tryParse(_weightController.text);
+      if (weight == null || weight <= 0 || weight > 300) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Enter a valid weight in kg (1-300).")),
+        );
+        return;
+      }
       type = "weight";
-      data['value'] = double.tryParse(_weightController.text) ?? 0.0;
+      data['value'] = weight;
     } else if (_tabController.index == 1) {
       if (_foodController.text.isEmpty) return;
       type = "diet";
@@ -152,12 +192,13 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> with SingleTi
 
     setState(() => _isSaving = true);
     try {
-      await FirebaseFirestore.instance.collection('users').doc(user!.uid).collection('health_logs').add(data);
+      await _healthService.addLog(data);
       _weightController.clear(); _foodController.clear(); _activityController.clear(); _durationController.clear();
+      if (!mounted) return;
       FocusScope.of(context).unfocus();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$type log added!")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$type log added!")));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -221,7 +262,7 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> with SingleTi
                       Column(
                         children: [
                           DropdownButtonFormField<String>(
-                            value: _selectedMeal,
+                            initialValue: _selectedMeal,
                             decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5)),
                             items: _mealTypes.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
                             onChanged: (val) => setState(() => _selectedMeal = val!),
@@ -261,8 +302,8 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> with SingleTi
           const Padding(padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10), child: Align(alignment: Alignment.centerLeft, child: Text("Recent Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)))),
 
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('users').doc(user?.uid).collection('health_logs').orderBy('timestamp', descending: true).snapshots(),
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: _healthService.streamLogs(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
                 final docs = snapshot.data!.docs;
@@ -272,15 +313,9 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> with SingleTi
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
                     final doc = docs[index];
-                    final data = doc.data() as Map<String, dynamic>;
-                    final type = data['type'] ?? 'unknown';
+                    final data = doc.data();
                     final date = (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
-                    final formattedDate = "${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2,'0')}";
-
-                    IconData icon; Color color; String title; String subtitle;
-                    if (type == 'weight') { icon = Icons.monitor_weight; color = Colors.blue; title = "${data['value']} kg"; subtitle = "Weight Logged"; }
-                    else if (type == 'diet') { icon = Icons.restaurant; color = Colors.green; title = "${data['meal_type']}: ${data['description']}"; subtitle = "Diet Logged"; }
-                    else { icon = Icons.fitness_center; color = Colors.orange; title = "${data['description']} (${data['duration_mins']} mins)"; subtitle = "Exercise Logged"; }
+                    final display = _HealthLogDisplay.of(data);
 
                     return Dismissible(
                       key: Key(doc.id),
@@ -290,9 +325,9 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> with SingleTi
                       child: Card(
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         child: ListTile(
-                          leading: CircleAvatar(backgroundColor: color.withOpacity(0.1), child: Icon(icon, color: color)),
-                          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text("$subtitle • $formattedDate"),
+                          leading: CircleAvatar(backgroundColor: display.color.withValues(alpha: 0.1), child: Icon(display.icon, color: display.color)),
+                          title: Text(display.detailsText, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text("${display.subtitle} • ${_formatLogDate(date)}"),
                         ),
                       ),
                     );

@@ -6,7 +6,9 @@ import 'profile_screen.dart';
 import 'health_logging_screen.dart';
 import 'appointment_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../logic/pregnancy_calculator.dart';
+import '../services/auth_service.dart';
+import '../services/user_profile_service.dart';
 
 // ---------------------------------------------------------------------------
 // 1. HOME SCREEN
@@ -59,62 +61,35 @@ class _HomeScreenState extends State<HomeScreen> {
 class DashboardTab extends StatelessWidget {
   const DashboardTab({super.key});
 
-  // A realistic fruit size based on week
-  String _getBabySize(int week) {
-    if (week < 4) return "Poppy Seed";
-    if (week < 8) return "Blueberry";
-    if (week < 12) return "Lime";
-    if (week < 16) return "Avocado";
-    if (week < 20) return "Banana";
-    if (week < 24) return "Ear of Corn";
-    if (week < 28) return "Eggplant";
-    if (week < 32) return "Squash";
-    if (week < 36) return "Honeydew Melon";
-    if (week < 40) return "Pumpkin";
-    return "Watermelon";
-  }
+  static const _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _authService.currentUser;
 
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(user?.uid)
-          .snapshots(),
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: UserProfileService(user?.uid ?? '').streamProfile(),
       builder: (context, snapshot) {
         // Defaults
         int currentWeek = 1;
-        int daysLeft = 280;
-        String babySize = "Poppy Seed";
+        int daysLeft = PregnancyCalculator.totalPregnancyDays;
+        String babySize = PregnancyCalculator.babySizeForWeek(1);
         double progress = 0.0;
         bool hasDate = false;
 
         // Calculation
         if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
-          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final data = snapshot.data!.data()!;
 
           if (data['due_date'] != null) {
             hasDate = true;
-            DateTime dueDate = (data['due_date'] as Timestamp).toDate();
-            DateTime today = DateTime.now();
+            final dueDate = (data['due_date'] as Timestamp).toDate();
+            final result = PregnancyCalculator.fromDueDate(dueDate);
 
-            daysLeft = dueDate.difference(today).inDays;
-
-            // Calculate Week
-            int totalDaysPregnant = 280 - daysLeft;
-            currentWeek = (totalDaysPregnant / 7).ceil();
-
-            if (currentWeek < 1) currentWeek = 1;
-            if (currentWeek > 42) currentWeek = 42;
-
-            progress = currentWeek / 40.0;
-            if (progress > 1.0) progress = 1.0;
-            if (progress < 0.0) progress = 0.0;
-
-            // Get the fruit name
-            babySize = _getBabySize(currentWeek);
+            currentWeek = result.currentWeek;
+            daysLeft = result.daysLeft;
+            progress = result.progress;
+            babySize = result.babySize;
           }
         }
 
@@ -169,7 +144,7 @@ class DashboardTab extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -286,7 +261,7 @@ class DashboardTab extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Column(
@@ -295,7 +270,7 @@ class DashboardTab extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 30),

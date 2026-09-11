@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
+import '../services/contraction_service.dart';
 
 class ContractionTimerScreen extends StatefulWidget {
   const ContractionTimerScreen({super.key});
@@ -14,13 +16,14 @@ class _ContractionTimerScreenState extends State<ContractionTimerScreen> {
   // Logic Variables
   bool _isActive = false;
   DateTime? _startTime;
-  Stopwatch _stopwatch = Stopwatch();
+  final Stopwatch _stopwatch = Stopwatch();
   Timer? _timer;
 
   // Display String (00:00)
   String _formattedTime = "00:00";
 
-  final User? user = FirebaseAuth.instance.currentUser;
+  final User? user = const AuthService().currentUser;
+  ContractionService get _contractionService => ContractionService(user!.uid);
 
   @override
   void dispose() {
@@ -72,16 +75,12 @@ class _ContractionTimerScreenState extends State<ContractionTimerScreen> {
 
     // SAVE TO FIREBASE
     if (user != null && startTimeToSave != null) {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .collection('contractions')
-          .add({
-        'start_time': startTimeToSave,
-        'duration_seconds': durationSeconds,
-        'timestamp': FieldValue.serverTimestamp(), // For sorting
-      });
+      await _contractionService.saveContraction(
+        startTime: startTimeToSave,
+        durationSeconds: durationSeconds,
+      );
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Contraction recorded!")),
       );
@@ -118,7 +117,7 @@ class _ContractionTimerScreenState extends State<ContractionTimerScreen> {
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Colors.grey.withValues(alpha: 0.1),
                       blurRadius: 20,
                       offset: const Offset(0, 10))
                 ],
@@ -158,7 +157,7 @@ class _ContractionTimerScreenState extends State<ContractionTimerScreen> {
                         boxShadow: [
                           BoxShadow(
                             color: (_isActive ? Colors.red : Colors.purple)
-                                .withOpacity(0.4),
+                                .withValues(alpha: 0.4),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -192,12 +191,7 @@ class _ContractionTimerScreenState extends State<ContractionTimerScreen> {
           Expanded(
             flex: 3,
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(user?.uid)
-                  .collection('contractions')
-                  .orderBy('start_time', descending: true)
-                  .snapshots(),
+              stream: _contractionService.streamContractions(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
@@ -244,12 +238,7 @@ class _ContractionTimerScreenState extends State<ContractionTimerScreen> {
                       ),
                       onDismissed: (direction) {
                         // DELETE FROM FIREBASE
-                        FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(user!.uid)
-                            .collection('contractions')
-                            .doc(doc.id)
-                            .delete();
+                        _contractionService.deleteContraction(doc.id);
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Entry deleted")),
