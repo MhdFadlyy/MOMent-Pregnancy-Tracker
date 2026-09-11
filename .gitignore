@@ -55,3 +55,6 @@ ios/Flutter/flutter_export_environment.sh
 # Firebase config — each dev/CI environment provides its own, see README
 **/google-services.json
 **/GoogleService-Info.plist
+
+# Firebase CLI local deploy cache
+.firebase/
