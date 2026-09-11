@@ -30,7 +30,7 @@
 
 ## 🛠️ Tech Stack
 
-* **Frontend:** Flutter (Dart)
+* **Frontend:** Flutter (Dart) — targets Android and Web
 * **Backend:** Firebase (Authentication, Cloud Firestore)
 * **Logic:** Custom local rule-engine for Chatbot (`lib/logic/`), pure and unit-tested
 * **Architecture:** Screens call thin `lib/services/` classes instead of touching Firebase directly, so each collection's access lives in one place
@@ -70,10 +70,12 @@ To run this project locally:
     * This project needs its own `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) — they aren't committed to the repo.
     * Create a Firebase project, enable Authentication (Email/Password) and Cloud Firestore, then register an Android/iOS app with package name `com.example.moment`.
     * Download the resulting config files into `android/app/google-services.json` and `ios/Runner/GoogleService-Info.plist` (see `android/app/google-services.json.example` for the expected shape).
+    * Web already has its own registered Firebase app (`lib/firebase_options.dart`), so `flutter run -d chrome` works out of the box against the same project.
 
 4.  **Run the App:**
     ```bash
-    flutter run
+    flutter run           # Android/iOS device or emulator
+    flutter run -d chrome # Web
     ```
 
 ---
