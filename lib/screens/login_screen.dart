@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,23 +17,19 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   bool _isLoading = false;
 
+  static const _authService = AuthService();
+
   // --- AUTH FUNCTION ---
   Future<void> _submitAuth() async {
     setState(() => _isLoading = true);
 
     try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
       if (_isLogin) {
-        // LOGIN LOGIC
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
+        await _authService.signIn(email: email, password: password);
       } else {
-        // SIGN UP LOGIC
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
+        await _authService.signUp(email: email, password: password);
       }
 
       // If successful, go to Home
@@ -43,9 +40,11 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? "Authentication failed")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? "Authentication failed")),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -85,10 +84,9 @@ class _LoginScreenState extends State<LoginScreen> {
               if (email.isEmpty) return;
 
               try {
-                await FirebaseAuth.instance
-                    .sendPasswordResetEmail(email: email);
+                await _authService.sendPasswordResetEmail(email);
 
-                if (mounted) {
+                if (context.mounted) {
                   Navigator.pop(context); // Close dialog
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -97,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 }
               } catch (e) {
-                if (mounted) {
+                if (context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Error: $e")),
@@ -134,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: Colors.white,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
+                        color: Colors.grey.withValues(alpha: 0.2),
                         spreadRadius: 2,
                         blurRadius: 5,
                         offset: const Offset(0, 3),

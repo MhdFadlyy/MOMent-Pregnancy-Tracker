@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
+import '../logic/chatbot_rules.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -39,7 +39,7 @@ class _ChatScreenState extends State<ChatScreen> {
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted) return;
 
-      String botResponse = _getLocalResponse(userText);
+      final botResponse = ChatbotRules.respond(userText);
 
       setState(() {
         _isTyping = false;
@@ -47,97 +47,6 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       _scrollToBottom();
     });
-  }
-
-  // Responses
-  String _getLocalResponse(String input) {
-    input = input.toLowerCase();
-
-    // Function to pick random answers
-    String pickRandom(List<String> options) {
-      return options[Random().nextInt(options.length)];
-    }
-
-    // --- GREETINGS ---
-    if (input.contains("hello") || input.contains("hi") || input.contains("hey")) {
-      return pickRandom([
-        "Hi there! How are you and the baby feeling today?",
-        "Hello! I'm here to help. What's on your mind?",
-        "Assalamualaikum! How can I assist you with your pregnancy journey today?"
-      ]);
-    }
-
-    // --- SYMPTOMS: HEADACHE ---
-    if (input.contains("headache") || input.contains("head") || input.contains("dizzy")) {
-      return pickRandom([
-        "Headaches are common due to hormonal changes. Drink plenty of water and rest.",
-        "Try a cold pack on your neck and rest in a dark room. If it persists, check your blood pressure.",
-        "Stay hydrated! If you also have blurred vision, please contact your doctor immediately."
-      ]);
-    }
-
-    // --- SYMPTOMS: NAUSEA / MORNING SICKNESS ---
-    if (input.contains("nausea") || input.contains("vomit") || input.contains("sick")) {
-      return pickRandom([
-        "Morning sickness is tough! Try eating small, frequent meals and avoid spicy foods.",
-        "Ginger tea or crackers before getting out of bed might help settle your stomach.",
-        "Stay hydrated with small sips of water. If you can't keep fluids down, call your doctor."
-      ]);
-    }
-
-    // --- SYMPTOMS: PAIN / CRAMPS (buat jd general) ---
-    if (input.contains("pain") || input.contains("cramp") || input.contains("hurt")) {
-      return "If the pain is severe or accompanied by bleeding, please go to the hospital immediately. For mild cramps, rest and hydration often help.";
-    }
-
-    // --- CRITICAL / EMERGENCY (Wajib ER ini mah) ---
-    if (input.contains("bleed") || input.contains("blood") || input.contains("water broke") || input.contains("fever")) {
-      return "⚠️ This could be urgent. Please contact your doctor or visit the Emergency Room (ER) immediately.";
-    }
-
-    // --- DIET & FOOD ---
-    if (input.contains("diet") || input.contains("eat") || input.contains("food") || input.contains("hungry")) {
-      return pickRandom([
-        "Focus on folic acid, iron, and calcium. Leafy greens, nuts, and dairy are great for the baby!",
-        "Try to avoid raw meat, sushi, and unpasteurized dairy. Cooked, balanced meals are best.",
-        "Eating for two doesn't mean double the calories—just double the nutrients! Snack on fruits and yogurt."
-      ]);
-    }
-
-    // --- BABY MOVEMENT ---
-    if (input.contains("kick") || input.contains("move") || input.contains("quiet")) {
-      return pickRandom([
-        "You should usually feel kicks starting weeks 18-24. Use our 'Kick Counter' tool to track them!",
-        "If you notice a decrease in movement, try drinking cold water and lying on your left side to see if baby wakes up.",
-        "Babies sleep too! But if you are worried about reduced movement, always call your healthcare provider."
-      ]);
-    }
-
-    // --- SLEEP ---
-    if (input.contains("sleep") || input.contains("tired") || input.contains("insomnia")) {
-      return pickRandom([
-        "Fatigue is normal. Try sleeping on your left side (SOS position) with a pillow between your knees.",
-        "Avoid caffeine before bed and try a warm (not hot) shower to relax.",
-        "Listen to your body. If you need a nap during the day, take one!"
-      ]);
-    }
-
-    // --- EMOTIONS ---
-    if (input.contains("sad") || input.contains("anxious") || input.contains("scared") || input.contains("cry")) {
-      return pickRandom([
-        "Pregnancy is an emotional rollercoaster. It's okay to feel this way. Talk to someone you trust.",
-        "Hormones can affect your mood significantly. Be kind to yourself today.",
-        "If you feel overwhelmed, please speak to your doctor. Maternal mental health is just as important as physical health."
-      ]);
-    }
-
-    // --- GRATITUDE / ENDING ---
-    if (input.contains("thank") || input.contains("bye") || input.contains("good")) {
-      return "You're very welcome! Take care of yourself and the little one. 👋";
-    }
-
-    // --- FALLBACK ANSWER ---
-    return "That's a great question. Since I'm an automated assistant, I recommend asking your doctor at your next appointment.";
   }
 
   void _scrollToBottom() {
@@ -219,7 +128,7 @@ class _ChatScreenState extends State<ChatScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, -5),
                 ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import '../services/appointment_service.dart';
+import '../services/auth_service.dart';
 
 class AppointmentScreen extends StatefulWidget {
   const AppointmentScreen({super.key});
@@ -11,7 +13,8 @@ class AppointmentScreen extends StatefulWidget {
 }
 
 class _AppointmentScreenState extends State<AppointmentScreen> {
-  final User? user = FirebaseAuth.instance.currentUser;
+  final User? user = const AuthService().currentUser;
+  AppointmentService get _appointmentService => AppointmentService(user!.uid);
 
   // Controllers for the Dialog
   final TextEditingController _titleController = TextEditingController();
@@ -121,17 +124,13 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
 
                     if (doc == null) {
                       // Create New
-                      await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(user!.uid)
-                          .collection('appointments')
-                          .add(data);
+                      await _appointmentService.addAppointment(data);
                     } else {
                       // Update Existing
                       await doc.reference.update(data);
                     }
 
-                    if (mounted) Navigator.pop(context);
+                    if (context.mounted) Navigator.pop(context);
                   },
                   child: const Text("Save"),
                 ),
@@ -159,12 +158,7 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .doc(user?.uid)
-            .collection('appointments')
-            .orderBy('date', descending: false) // Upcoming first
-            .snapshots(),
+        stream: _appointmentService.streamAppointments(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
@@ -212,7 +206,7 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
                     leading: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                       decoration: BoxDecoration(
-                        color: Colors.purple.withOpacity(0.1),
+                        color: Colors.purple.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(

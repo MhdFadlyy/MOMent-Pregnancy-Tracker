@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
+import '../services/kick_counter_service.dart';
 
 class KickCounterScreen extends StatefulWidget {
   const KickCounterScreen({super.key});
@@ -15,7 +17,8 @@ class _KickCounterScreenState extends State<KickCounterScreen> {
   DateTime? _lastKickTime;
   bool _isSaving = false;
 
-  final User? user = FirebaseAuth.instance.currentUser;
+  final User? user = const AuthService().currentUser;
+  KickCounterService get _kickService => KickCounterService(user!.uid);
 
   void _addKick() {
     setState(() {
@@ -43,15 +46,7 @@ class _KickCounterScreenState extends State<KickCounterScreen> {
     try {
       final duration = _lastKickTime!.difference(_firstKickTime!).inMinutes;
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .collection('kicks')
-          .add({
-        'count': _kicks,
-        'duration_minutes': duration,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+      await _kickService.saveSession(count: _kicks, durationMinutes: duration);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -101,7 +96,7 @@ class _KickCounterScreenState extends State<KickCounterScreen> {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Colors.grey.withValues(alpha: 0.1),
                       blurRadius: 15,
                       offset: const Offset(0, 5)),
                 ],
@@ -186,12 +181,7 @@ class _KickCounterScreenState extends State<KickCounterScreen> {
           Expanded(
             flex: 2,
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(user?.uid)
-                  .collection('kicks')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
+              stream: _kickService.streamSessions(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
@@ -230,12 +220,7 @@ class _KickCounterScreenState extends State<KickCounterScreen> {
                       ),
                       onDismissed: (direction) {
                         // DELETE FROM FIREBASE
-                        FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(user!.uid)
-                            .collection('kicks')
-                            .doc(doc.id)
-                            .delete();
+                        _kickService.deleteSession(doc.id);
 
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Session deleted")),
@@ -248,7 +233,7 @@ class _KickCounterScreenState extends State<KickCounterScreen> {
                             backgroundColor: Theme.of(context)
                                 .colorScheme
                                 .secondary
-                                .withOpacity(0.2),
+                                .withValues(alpha: 0.2),
                             child: Icon(Icons.history,
                                 color: Theme.of(context).colorScheme.secondary),
                           ),

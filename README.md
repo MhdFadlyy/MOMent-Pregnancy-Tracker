@@ -32,7 +32,9 @@
 
 * **Frontend:** Flutter (Dart)
 * **Backend:** Firebase (Authentication, Cloud Firestore)
-* **Logic:** Custom local rule-engine for Chatbot
+* **Logic:** Custom local rule-engine for Chatbot (`lib/logic/`), pure and unit-tested
+* **Architecture:** Screens call thin `lib/services/` classes instead of touching Firebase directly, so each collection's access lives in one place
+* **Testing:** `flutter test` covers the pregnancy-week calculator, the chatbot rule engine, and a login-screen widget test
 * **Packages:**
     * `cloud_firestore` & `firebase_auth` (Backend)
     * `pdf` & `printing` (Reporting)
@@ -65,7 +67,9 @@ To run this project locally:
     flutter pub get
     ```
 3.  **Firebase Setup:**
-    * This project relies on `google-services.json` (Android) and `GoogleService-Info.plist` (iOS).
+    * This project needs its own `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) — they aren't committed to the repo.
+    * Create a Firebase project, enable Authentication (Email/Password) and Cloud Firestore, then register an Android/iOS app with package name `com.example.moment`.
+    * Download the resulting config files into `android/app/google-services.json` and `ios/Runner/GoogleService-Info.plist` (see `android/app/google-services.json.example` for the expected shape).
 
 4.  **Run the App:**
     ```bash
@@ -74,11 +78,8 @@ To run this project locally:
 
 ---
 
-## 📄 License
+## 👤 Author
 
-* Name        : FADLY MUHAMMAD
-* Matric No   : 2117999
-* Course      : BIT
-* This project was developed as a **Final Year Project (FYP)** for the Bachelor of Information Technology program.
+Built by **Fadly Muhammad** as a Final Year Project for the Bachelor of Information Technology program.
 
 ---

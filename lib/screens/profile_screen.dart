@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_screen.dart';
+import '../services/auth_service.dart';
+import '../services/user_profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -20,6 +22,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = true;
   bool _isEditing = false;
 
+  static const _authService = AuthService();
+
   @override
   void initState() {
     super.initState();
@@ -28,10 +32,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // 1. FETCH DATA
   Future<void> _loadUserData() async {
-    user = FirebaseAuth.instance.currentUser;
+    user = _authService.currentUser;
     if (user != null) {
       try {
-        final doc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
+        final doc = await UserProfileService(user!.uid).getProfile();
         if (doc.exists) {
           final data = doc.data() as Map<String, dynamic>;
           setState(() {
@@ -43,7 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           });
         }
       } catch (e) {
-        print("Error loading profile: $e");
+        debugPrint("Error loading profile: $e");
       }
     }
     setState(() => _isLoading = false);
@@ -54,26 +58,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (user == null) return;
     setState(() => _isLoading = true);
     try {
-      await FirebaseFirestore.instance.collection('users').doc(user!.uid).set({
+      await UserProfileService(user!.uid).saveProfile({
         'name': _nameController.text.trim(),
         'age': int.tryParse(_ageController.text.trim()) ?? 0,
         'due_date': _selectedDate != null ? Timestamp.fromDate(_selectedDate!) : null,
         'email': user!.email,
         'last_updated': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      });
 
+      if (!mounted) return;
       setState(() => _isEditing = false);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profile updated successfully!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profile updated successfully!")));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error saving: $e")));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error saving: $e")));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   // 3. LOGOUT
   Future<void> _signOut() async {
-    await FirebaseAuth.instance.signOut();
+    await _authService.signOut();
     if (mounted) {
       Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
     }
@@ -107,10 +112,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       // B. Delete Data from Firestore
-      await FirebaseFirestore.instance.collection('users').doc(user!.uid).delete();
+      await UserProfileService(user!.uid).deleteProfile();
 
       // C. Delete User from Authentication
-      await user!.delete();
+      await _authService.deleteCurrentUser();
 
       // D. Navigate to Login
       if (mounted) {
@@ -122,6 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Account deleted.")));
       }
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       // Security Check: If user hasn't logged in recently, Firebase requires re-login
       if (e.code == 'requires-recent-login') {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please log out and log in again to perform this sensitive action.")));
@@ -129,7 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: ${e.message}")));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -158,8 +164,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: Icon(_isEditing ? Icons.save : Icons.edit),
             onPressed: () {
-              if (_isEditing) _saveProfile();
-              else setState(() => _isEditing = true);
+              if (_isEditing) {
+                _saveProfile();
+              } else {
+                setState(() => _isEditing = true);
+              }
             },
           )
         ],
@@ -176,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                    backgroundColor: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.2),
                     child: Icon(Icons.person, size: 60, color: Theme.of(context).colorScheme.primary),
                   ),
                   if (_isEditing)
